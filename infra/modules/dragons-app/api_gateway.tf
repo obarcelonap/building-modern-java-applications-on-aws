@@ -31,7 +31,12 @@ resource "aws_api_gateway_method" "dragons-app-api-gateway-method-get" {
   resource_id   = aws_api_gateway_resource.dragons-app-api-gateway-resource.id
   rest_api_id   = aws_api_gateway_rest_api.dragons-app-api-gateway.id
   http_method   = "GET"
-  authorization = "NONE"
+  authorization = "COGNITO_USER_POOLS"
+  authorizer_id = aws_api_gateway_authorizer.dragons-app-authorizer.id
+
+  #  request_parameters = {
+  #    "method.request.path.proxy" = true
+  #  }
 }
 
 resource "aws_api_gateway_integration" "dragons-app-api-integration-get" {
@@ -178,7 +183,12 @@ resource "aws_api_gateway_method" "dragons-app-api-gateway-method-post" {
   resource_id   = aws_api_gateway_resource.dragons-app-api-gateway-resource.id
   rest_api_id   = aws_api_gateway_rest_api.dragons-app-api-gateway.id
   http_method   = "POST"
-  authorization = "NONE"
+  authorization = "COGNITO_USER_POOLS"
+  authorizer_id = aws_api_gateway_authorizer.dragons-app-authorizer.id
+
+  #  request_parameters = {
+  #    "method.request.path.proxy" = true
+  #  }
 
   request_models = {
     "application/json" = aws_api_gateway_model.dragons-app-api-model.name
@@ -263,6 +273,15 @@ module "api-gateway-enable-cors" {
   source  = "squidfunk/api-gateway-enable-cors/aws"
   version = "0.3.3"
 
-  api_id          = aws_api_gateway_rest_api.dragons-app-api-gateway.id
-  api_resource_id = aws_api_gateway_resource.dragons-app-api-gateway-resource.id
+  api_id            = aws_api_gateway_rest_api.dragons-app-api-gateway.id
+  api_resource_id   = aws_api_gateway_resource.dragons-app-api-gateway-resource.id
+  allow_credentials = true
+}
+
+resource "aws_api_gateway_authorizer" "dragons-app-authorizer" {
+  name            = "dragons-app-authorizer"
+  type            = "COGNITO_USER_POOLS"
+  rest_api_id     = aws_api_gateway_rest_api.dragons-app-api-gateway.id
+  provider_arns   = [aws_cognito_user_pool.dragons-pool.arn]
+  identity_source = "method.request.header.authorization"
 }
