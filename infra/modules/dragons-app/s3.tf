@@ -1,5 +1,5 @@
 locals {
-  dragons_app_path = "${path.module}/webapp1"
+  dragons_app_path = "${path.module}/webapp2"
   dragons_app_data = "${path.module}/dragon_stats_one.txt"
   content_type_map = {
     html = "text/html",

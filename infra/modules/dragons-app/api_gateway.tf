@@ -1,3 +1,18 @@
+locals {
+  cors_params = {
+    "method.response.header.Access-Control-Allow-Headers"     = true,
+    "method.response.header.Access-Control-Allow-Methods"     = true,
+    "method.response.header.Access-Control-Allow-Origin"      = true,
+    "method.response.header.Access-Control-Allow-Credentials" = true
+  }
+  cors_values = {
+    "method.response.header.Access-Control-Allow-Headers"     = "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'",
+    "method.response.header.Access-Control-Allow-Methods"     = "'GET,OPTIONS,POST'",
+    "method.response.header.Access-Control-Allow-Origin"      = "'*'",
+    "method.response.header.Access-Control-Allow-Credentials" = "'true'"
+  }
+}
+
 resource "aws_api_gateway_rest_api" "dragons-app-api-gateway" {
   name = "DragonsApp"
 
@@ -39,6 +54,8 @@ resource "aws_api_gateway_method_response" "dragons-app-api-integration-response
   resource_id = aws_api_gateway_resource.dragons-app-api-gateway-resource.id
   http_method = aws_api_gateway_method.dragons-app-api-gateway-method-get.http_method
   status_code = "200"
+
+  response_parameters = local.cors_params
 }
 
 resource "aws_api_gateway_integration_response" "dragons-app-api-integration-response-get" {
@@ -46,6 +63,8 @@ resource "aws_api_gateway_integration_response" "dragons-app-api-integration-res
   resource_id = aws_api_gateway_resource.dragons-app-api-gateway-resource.id
   http_method = aws_api_gateway_method.dragons-app-api-gateway-method-get.http_method
   status_code = aws_api_gateway_method_response.dragons-app-api-integration-response-OK-get.status_code
+
+  response_parameters = local.cors_values
 
   response_templates = {
     "application/json" = <<EOF
@@ -187,6 +206,8 @@ resource "aws_api_gateway_method_response" "dragons-app-api-integration-response
   resource_id = aws_api_gateway_resource.dragons-app-api-gateway-resource.id
   http_method = aws_api_gateway_method.dragons-app-api-gateway-method-post.http_method
   status_code = "200"
+
+  response_parameters = local.cors_params
 }
 
 resource "aws_api_gateway_integration_response" "dragons-app-api-integration-response-post" {
@@ -194,6 +215,8 @@ resource "aws_api_gateway_integration_response" "dragons-app-api-integration-res
   resource_id = aws_api_gateway_resource.dragons-app-api-gateway-resource.id
   http_method = aws_api_gateway_method.dragons-app-api-gateway-method-post.http_method
   status_code = aws_api_gateway_method_response.dragons-app-api-integration-response-OK-post.status_code
+
+  response_parameters = local.cors_values
 }
 
 resource "aws_api_gateway_request_validator" "dragons-app-api-request-validator" {
@@ -203,7 +226,7 @@ resource "aws_api_gateway_request_validator" "dragons-app-api-request-validator"
 }
 
 resource "aws_api_gateway_deployment" "dragons-app-api-deployment" {
-  depends_on  = [
+  depends_on = [
     aws_api_gateway_method.dragons-app-api-gateway-method-get,
     aws_api_gateway_method.dragons-app-api-gateway-method-post
   ]
@@ -234,4 +257,12 @@ resource "aws_api_gateway_stage" "dragons-app-api-stage" {
   deployment_id = aws_api_gateway_deployment.dragons-app-api-deployment.id
   rest_api_id   = aws_api_gateway_rest_api.dragons-app-api-gateway.id
   stage_name    = "prod"
+}
+
+module "api-gateway-enable-cors" {
+  source  = "squidfunk/api-gateway-enable-cors/aws"
+  version = "0.3.3"
+
+  api_id          = aws_api_gateway_rest_api.dragons-app-api-gateway.id
+  api_resource_id = aws_api_gateway_resource.dragons-app-api-gateway-resource.id
 }
