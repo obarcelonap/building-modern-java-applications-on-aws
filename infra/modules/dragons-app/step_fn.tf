@@ -7,6 +7,12 @@ resource "aws_sfn_state_machine" "dragons_state_machine" {
     enabled = true
   }
 
+  logging_configuration {
+    level                  = "ALL"
+    include_execution_data = true
+    log_destination        = "${aws_cloudwatch_log_group.dragons_state_machine_role_log_group.arn}:*"
+  }
+
   definition = <<EOF
 {
   "Comment": "Dragon will be validated. If validation fails, a failure message will be sent. If the dragon is valid, it will be added to the data and a success message will be sent.",
@@ -85,6 +91,10 @@ resource "aws_sfn_state_machine" "dragons_state_machine" {
 EOF
 }
 
+resource "aws_cloudwatch_log_group" "dragons_state_machine_role_log_group" {
+  name = "dragons_state_machine_role_log_group"
+}
+
 resource "aws_iam_role" "dragons_state_machine_role" {
   name               = "dragons-state-machine-role"
   assume_role_policy = data.aws_iam_policy_document.dragons_app_state_machine_assume_policy_doc.json
@@ -125,5 +135,20 @@ data "aws_iam_policy_document" "dragons_app_state_machine_role_policy_doc" {
       aws_lambda_function.dragons_app_lambda_validate_dragon.arn,
       aws_lambda_function.dragons_app_lambda_add_dragon.arn,
     ]
+  }
+  statement {
+    effect  = "Allow"
+    actions = [
+      "logs:CreateLogDelivery",
+      "logs:GetLogDelivery",
+      "logs:UpdateLogDelivery",
+      "logs:DeleteLogDelivery",
+      "logs:ListLogDeliveries",
+      "logs:PutLogEvents",
+      "logs:PutResourcePolicy",
+      "logs:DescribeResourcePolicies",
+      "logs:DescribeLogGroups"
+    ]
+    resources = ["*"]
   }
 }

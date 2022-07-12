@@ -29,4 +29,5 @@ resource "aws_lambda_function" "dragons_app_lambda_add_dragon" {
   memory_size      = 448
   filename         = local.add_lambda_archive
   depends_on       = [null_resource.dragons_app_lambda_add_dragon_build]
+
 }
