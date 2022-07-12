@@ -18,7 +18,7 @@ module "dragons-app" {
   source = "../modules/dragons-app"
 }
 
-output "dragons-app-url" {
+output "dragons-app-output" {
   value       = module.dragons-app
-  description = "The url where dragons app is hosted"
+  description = "The outputs of dragons-app module"
 }

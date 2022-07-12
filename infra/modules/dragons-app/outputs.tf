@@ -26,3 +26,8 @@ output "dragons-app-list-dragons-lambda-arns" {
   }
   description = "The arns of the lambda functions"
 }
+
+output "dragons-app-step-machine" {
+  value       = aws_sfn_state_machine.dragons_state_machine.arn
+  description = "The arn of the step machine"
+}

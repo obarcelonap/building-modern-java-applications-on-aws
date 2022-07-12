@@ -33,10 +33,6 @@ resource "aws_api_gateway_method" "dragons-app-api-gateway-method-get" {
   http_method   = "GET"
   authorization = "COGNITO_USER_POOLS"
   authorizer_id = aws_api_gateway_authorizer.dragons-app-authorizer.id
-
-  #  request_parameters = {
-  #    "method.request.path.proxy" = true
-  #  }
 }
 
 resource "aws_api_gateway_integration" "dragons-app-api-integration-get" {
@@ -54,6 +50,8 @@ resource "aws_api_gateway_integration" "dragons-app-api-integration-get" {
       }
     )
   }
+
+  depends_on = [aws_lambda_function.dragons_app_lambda_list_dragons]
 }
 
 resource "aws_lambda_permission" "dragons-app-api-integration-get-permission" {
@@ -83,87 +81,7 @@ resource "aws_api_gateway_integration_response" "dragons-app-api-integration-res
 
   response_parameters = local.cors_values
 
-#  response_templates = {
-#    "application/json" = <<EOF
-#[
-#   #if( $input.params('family') == "red" )
-#      {
-#         "description_str":"Xanya is the fire tribe's banished general. She broke ranks and has been wandering ever since.",
-#         "dragon_name_str":"Xanya",
-#         "family_str":"red",
-#         "location_city_str":"las vegas",
-#         "location_country_str":"usa",
-#         "location_neighborhood_str":"e clark ave",
-#         "location_state_str":"nevada"
-#      }, {
-#         "description_str":"Eislex flies with the fire sprites. He protects them and is their guardian.",
-#         "dragon_name_str":"Eislex",
-#         "family_str":"red",
-#         "location_city_str":"st. cloud",
-#         "location_country_str":"usa",
-#         "location_neighborhood_str":"breckenridge ave",
-#         "location_state_str":"minnesota"      }
-#   #elseif( $input.params('family') == "blue" )
-#      {
-#         "description_str":"Protheus is a wise and ancient dragon that serves on the grand council in the sky world. He uses his power to calm those near him.",
-#         "dragon_name_str":"Protheus",
-#         "family_str":"blue",
-#         "location_city_str":"brandon",
-#         "location_country_str":"usa",
-#         "location_neighborhood_str":"e morgan st",
-#         "location_state_str":"florida"
-#      }
-#   #elseif( $input.params('dragonName') == "Atlas" )
-#      {
-#         "description_str":"From the northern fire tribe, Atlas was born from the ashes of his fallen father in combat. He is fearless and does not fear battle.",
-#         "dragon_name_str":"Atlas",
-#         "family_str":"red",
-#         "location_city_str":"anchorage",
-#         "location_country_str":"usa",
-#         "location_neighborhood_str":"w fireweed ln",
-#         "location_state_str":"alaska"
-#      }
-#   #else
-#      {
-#         "description_str":"From the northern fire tribe, Atlas was born from the ashes of his fallen father in combat. He is fearless and does not fear battle.",
-#         "dragon_name_str":"Atlas",
-#         "family_str":"red",
-#         "location_city_str":"anchorage",
-#         "location_country_str":"usa",
-#         "location_neighborhood_str":"w fireweed ln",
-#         "location_state_str":"alaska"
-#      },
-#      {
-#         "description_str":"Protheus is a wise and ancient dragon that serves on the grand council in the sky world. He uses his power to calm those near him.",
-#         "dragon_name_str":"Protheus",
-#         "family_str":"blue",
-#         "location_city_str":"brandon",
-#         "location_country_str":"usa",
-#         "location_neighborhood_str":"e morgan st",
-#         "location_state_str":"florida"
-#      },
-#      {
-#         "description_str":"Xanya is the fire tribe's banished general. She broke ranks and has been wandering ever since.",
-#         "dragon_name_str":"Xanya",
-#         "family_str":"red",
-#         "location_city_str":"las vegas",
-#         "location_country_str":"usa",
-#         "location_neighborhood_str":"e clark ave",
-#         "location_state_str":"nevada"
-#      },
-#      {
-#         "description_str":"Eislex flies with the fire sprites. He protects them and is their guardian.",
-#         "dragon_name_str":"Eislex",
-#         "family_str":"red",
-#         "location_city_str":"st. cloud",
-#         "location_country_str":"usa",
-#         "location_neighborhood_str":"breckenridge ave",
-#         "location_state_str":"minnesota"
-#      }
-#   #end
-#]
-#EOF
-#  }
+  depends_on = [aws_api_gateway_integration.dragons-app-api-integration-get]
 }
 
 resource "aws_api_gateway_model" "dragons-app-api-model" {
@@ -198,10 +116,6 @@ resource "aws_api_gateway_method" "dragons-app-api-gateway-method-post" {
   authorization = "COGNITO_USER_POOLS"
   authorizer_id = aws_api_gateway_authorizer.dragons-app-authorizer.id
 
-  #  request_parameters = {
-  #    "method.request.path.proxy" = true
-  #  }
-
   request_models = {
     "application/json" = aws_api_gateway_model.dragons-app-api-model.name
   }
@@ -212,14 +126,33 @@ resource "aws_api_gateway_integration" "dragons-app-api-integration-post" {
   rest_api_id = aws_api_gateway_rest_api.dragons-app-api-gateway.id
   resource_id = aws_api_gateway_resource.dragons-app-api-gateway-resource.id
   http_method = aws_api_gateway_method.dragons-app-api-gateway-method-post.http_method
-  type        = "MOCK"
 
-  request_templates = {
-    "application/json" = jsonencode(
-      {
-        statusCode = 200
-      }
-    )
+  type        = "AWS"
+  uri         = "arn:aws:apigateway:${data.aws_region.current.name}:states:action/StartExecution"
+  credentials = aws_iam_role.dragons_app_api_gateway_role.arn
+  integration_http_method = "POST"
+
+  passthrough_behavior = "WHEN_NO_MATCH"
+  request_templates    = {
+    "application/json" = <<EOF
+#set($data = $input.path('$'))
+
+#set($input = " {
+  ""dragon_name_str"" : ""$data.dragonName"",
+  ""description_str"" : ""$data.description"",
+  ""family_str"" : ""$data.family"",
+  ""location_city_str"" : ""$data.city"",
+  ""location_country_str"" : ""$data.country"",
+  ""location_state_str"" : ""$data.state"",
+  ""location_neighborhood_str"" : ""$data.neighborhood"",
+  ""reportingPhoneNumber"" : ""$data.reportingPhoneNumber"",
+  ""confirmationRequired"" : $data.confirmationRequired}")
+
+{
+    "input": "$util.escapeJavaScript($input).replaceAll("\\'", "'")",
+    "stateMachineArn": "${aws_sfn_state_machine.dragons_state_machine.arn}"
+}
+EOF
   }
 }
 
@@ -230,6 +163,8 @@ resource "aws_api_gateway_method_response" "dragons-app-api-integration-response
   status_code = "200"
 
   response_parameters = local.cors_params
+
+  depends_on = [aws_api_gateway_integration.dragons-app-api-integration-post]
 }
 
 resource "aws_api_gateway_integration_response" "dragons-app-api-integration-response-post" {

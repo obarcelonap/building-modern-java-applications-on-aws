@@ -8,6 +8,11 @@ resource "aws_iam_role_policy" "dragons_app_read_policy" {
   role   = aws_iam_role.dragons_app_read_lambda_role.id
 }
 
+resource "aws_iam_role_policy_attachment" "dragons_app_read_lambda_role_policy_xray" {
+  role       = aws_iam_role.dragons_app_read_lambda_role.name
+  policy_arn = "arn:aws:iam::aws:policy/AWSXrayWriteOnlyAccess"
+}
+
 resource "aws_iam_role" "dragons_app_read_write_lambda_role" {
   name               = "dragons-read-write-lambda-role"
   assume_role_policy = data.aws_iam_policy_document.dragons_app_lambda_assume_policy_doc.json
@@ -16,6 +21,11 @@ resource "aws_iam_role" "dragons_app_read_write_lambda_role" {
 resource "aws_iam_role_policy" "dragons_app_read_write_policy" {
   policy = data.aws_iam_policy_document.dragons_app_read_write_policy_doc.json
   role   = aws_iam_role.dragons_app_read_write_lambda_role.id
+}
+
+resource "aws_iam_role_policy_attachment" "dragons_app_read_write_lambda_role_policy_xray" {
+  role       = aws_iam_role.dragons_app_read_write_lambda_role.name
+  policy_arn = "arn:aws:iam::aws:policy/AWSXrayWriteOnlyAccess"
 }
 
 data "aws_iam_policy_document" "dragons_app_lambda_assume_policy_doc" {
