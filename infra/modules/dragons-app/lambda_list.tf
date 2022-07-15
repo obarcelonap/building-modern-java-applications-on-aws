@@ -28,4 +28,8 @@ resource "aws_lambda_function" "dragons_app_lambda_list_dragons" {
   memory_size      = 448
   filename         = local.list_lambda_archive
   depends_on       = [null_resource.dragons_app_lambda_list_dragons_build]
+
+  tracing_config {
+    mode = "Active"
+  }
 }
