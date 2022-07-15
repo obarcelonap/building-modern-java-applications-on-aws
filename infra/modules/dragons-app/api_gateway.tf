@@ -127,9 +127,9 @@ resource "aws_api_gateway_integration" "dragons-app-api-integration-post" {
   resource_id = aws_api_gateway_resource.dragons-app-api-gateway-resource.id
   http_method = aws_api_gateway_method.dragons-app-api-gateway-method-post.http_method
 
-  type        = "AWS"
-  uri         = "arn:aws:apigateway:${data.aws_region.current.name}:states:action/StartExecution"
-  credentials = aws_iam_role.dragons_app_api_gateway_role.arn
+  type                    = "AWS"
+  uri                     = "arn:aws:apigateway:${data.aws_region.current.name}:states:action/StartExecution"
+  credentials             = aws_iam_role.dragons_app_api_gateway_role.arn
   integration_http_method = "POST"
 
   passthrough_behavior = "WHEN_NO_MATCH"
@@ -214,6 +214,10 @@ resource "aws_api_gateway_stage" "dragons-app-api-stage" {
   deployment_id = aws_api_gateway_deployment.dragons-app-api-deployment.id
   rest_api_id   = aws_api_gateway_rest_api.dragons-app-api-gateway.id
   stage_name    = "prod"
+
+  xray_tracing_enabled  = true
+  cache_cluster_enabled = true
+  cache_cluster_size    = "0.5"
 }
 
 module "api-gateway-enable-cors" {
